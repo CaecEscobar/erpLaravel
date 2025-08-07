@@ -10,7 +10,8 @@ use App\Http\Controllers\{
     UserProfileController,
     RoleController,
     OrderController,
-    OrderProductController
+    OrderProductController,
+    ProductImportController
 };
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -30,4 +31,6 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
         Route::post('/', [OrderProductController::class, 'store']);
         Route::delete('{id}', [OrderProductController::class, 'destroy']);
     });
+
+    Route::post('/importar-productos', [ProductImportController::class, 'import']);
 // });

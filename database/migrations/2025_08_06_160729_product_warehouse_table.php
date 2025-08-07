@@ -10,10 +10,9 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('warehouse_id')->constrained()->onDelete('cascade');
-            $table->integer('quantity')->default(0);
+            $table->decimal('quantity', 10, 2)->default(0);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            $table->unique(['product_id', 'warehouse_id']); // para evitar duplicados
         });
     }
 

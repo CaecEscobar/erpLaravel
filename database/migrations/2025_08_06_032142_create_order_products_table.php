@@ -9,19 +9,15 @@ return new class extends Migration {
         Schema::create('order_products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->foreignId('product_id')->constrained()->onDelete('restrict');
-            $table->integer('quantity');
-            $table->string('unit_measure');
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->decimal('quantity', 10, 2);
             $table->decimal('unit_price', 10, 2);
-            $table->unsignedTinyInteger('discount')->default(0); // porcentaje: 0–100
-
-            $table->decimal('subtotal', 12, 2);         // unit_price * quantity
-            $table->decimal('discount_amount', 12, 2);  // (subtotal * discount / 100)
-            $table->decimal('iva', 12, 2);              // (subtotal - discount_amount) * 0.16
-            $table->decimal('total', 12, 2);            // subtotal - discount_amount + iva
-
-            $table->boolean('is_active')->default(true); // <- Aquí
-            
+            $table->decimal('discount', 5, 2)->default(0); // porcentaje
+            $table->decimal('discount_amount', 10, 2)->default(0);
+            $table->decimal('subtotal', 12, 2);
+            $table->decimal('iva', 12, 2);
+            $table->decimal('total', 12, 2);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
