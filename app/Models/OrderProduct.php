@@ -2,50 +2,32 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderProduct extends Model
 {
+    use HasFactory;
+
+    protected $table = 'order_products';
+
     protected $fillable = [
         'order_id',
-        'product_id',
+        'product_detail_id',
         'quantity',
-        'unit_measure',
-        'unit_price',
-        'discount',
-        'subtotal',
         'discount_amount',
-        'iva',
-        'total',
-        'is_active',
+        'unit_price',
+        'total_price'
     ];
 
-    protected $casts = [
-        'is_active' => 'boolean',
-        'discount' => 'integer',
-        'unit_price' => 'decimal:2',
-        'subtotal' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'iva' => 'decimal:2',
-        'total' => 'decimal:2',
-    ];
-
-    public function order()
+    public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
-    public function product()
+    public function productDetail(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
-    }
-
-    public function calculateTotals(): void
-    {
-        $this->subtotal = $this->unit_price * $this->quantity;
-        $this->discount_amount = $this->subtotal * ($this->discount / 100);
-        $base = $this->subtotal - $this->discount_amount;
-        $this->iva = round($base * 0.16, 2);
-        $this->total = round($base + $this->iva, 2);
+        return $this->belongsTo(ProductDetail::class);
     }
 }

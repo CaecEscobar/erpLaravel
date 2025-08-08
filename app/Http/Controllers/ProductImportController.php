@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use App\Models\Product;
 use App\Models\ProductDetail;
 use App\Models\PriceList;
@@ -14,6 +13,8 @@ class ProductImportController extends Controller
 {
     public function import(Request $request)
     {
+        set_time_limit(300);
+
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls',
         ]);
@@ -39,21 +40,23 @@ class ProductImportController extends Controller
         for ($i = 6; $i <= count($rows); $i++) {
             $row = $rows[$i] ?? [];
 
-            $colA = trim($row['A'] ?? '');
+            $colA = trim($row['A'] ?? ''); // Puede ser name o sku
             $colB = trim($row['B'] ?? ''); // Descripción
+            $descripcion = $colB;
             $unidad = trim($row['C'] ?? '');
-            $multiplo = trim($row['D'] ?? '');
+            $rawMultiplo = trim($row['D'] ?? '');
+            preg_match('/[\d.,]+/', $rawMultiplo, $matches);
+            $multiplo = isset($matches[0]) ? floatval(str_replace(',', '.', $matches[0])) : 1;
 
-            // Si hay valor en A y B está vacío, es un nombre de producto
-            if ($colA !== '' && $colB === '') {
-                $currentProduct = Product::firstOrCreate(['name' => $colA]);
+            // Si hay valor en A y B está vacío (trim), es un nombre de producto
+            if ($colA !== '' && (!isset($row['B']) || trim($row['B']) === '')) {
+                $currentProduct = Product::create(['name' => $colA]);
                 continue;
             }
 
             // Si hay valor tanto en A como en B, es un detalle (sku está en A)
             if ($colA !== '' && $colB !== '' && $currentProduct) {
                 $sku = $colA;
-                $descripcion = $colB;
 
                 foreach ($listaColumnas as $col => $listaNombre) {
                     $precio = $row[$col] ?? null;
@@ -63,7 +66,6 @@ class ProductImportController extends Controller
 
                     $priceList = PriceList::where('name', $listaNombre)->first();
                     if (!$priceList) {
-                        Log::warning("Lista de precio '{$listaNombre}' no encontrada");
                         continue;
                     }
 
@@ -86,5 +88,14 @@ class ProductImportController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Productos importados correctamente.']);
+    }
+
+    public function extraerMultiplicador($valor)
+    {
+        // Ej: "21 Pzs", "0.25 Millar" → extrae "21" o "0.25"
+        if (preg_match('/^[\d,.]+/', trim($valor), $matches)) {
+            return floatval(str_replace(',', '.', $matches[0]));
+        }
+        return null;
     }
 }

@@ -8,11 +8,12 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade'); // vendedor asignado
-            $table->foreignId('location_id')->nullable()->constrained()->onDelete('set null');
             $table->string('name');
-            $table->decimal('max_discount', 5, 2)->default(0); // ejemplo: 15.00 %
-            $table->json('price_list_id'); // ejemplo: [1, "gob", 97]
+            $table->string('client_number')->unique();
+            $table->foreignId('vendor_number')->nullable()->onDelete('set null');
+            $table->foreignId('location_id')->nullable()->constrained()->onDelete('set null');
+            $table->decimal('max_discount', 5, 2)->nullable()->default(0);
+            $table->json('price_list_id')->nullable();
             $table->timestamps();
         });
     }

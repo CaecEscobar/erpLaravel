@@ -11,11 +11,15 @@ use App\Http\Controllers\{
     RoleController,
     OrderController,
     OrderProductController,
-    ProductImportController
+    ProductImportController,
+    OrderExportController,
+    ReportImportController,
+    ReportController,
+    ClientImportController
 };
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
+    return $request->user()->load('role');
 });
 
 // Route::middleware('auth:sanctum')->group(function () {
@@ -33,4 +37,8 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     });
 
     Route::post('/importar-productos', [ProductImportController::class, 'import']);
+    Route::get('/export-order/{id}', [OrderExportController::class, 'export']);
+    Route::post('/import-reports', [ReportImportController::class, 'import']);
+    Route::middleware('auth:sanctum')->get('/reports/dashboard', [ReportController::class, 'dashboard']);
+    Route::post('/importar-clientes', [ClientImportController::class, 'import']);
 // });

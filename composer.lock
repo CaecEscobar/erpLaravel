@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "64dbe854515831d7f7e6b52e388b1e65",
+    "content-hash": "ab90a605b938cce731b11bfce38f4294",
     "packages": [
         {
             "name": "brick/math",
@@ -1135,16 +1135,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.21.0",
+            "version": "v12.22.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "ac8c4e73bf1b5387b709f7736d41427e6af1c93b"
+                "reference": "6ab00c913ef6ec6fad0bd506f7452c0bb9e792c3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/ac8c4e73bf1b5387b709f7736d41427e6af1c93b",
-                "reference": "ac8c4e73bf1b5387b709f7736d41427e6af1c93b",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/6ab00c913ef6ec6fad0bd506f7452c0bb9e792c3",
+                "reference": "6ab00c913ef6ec6fad0bd506f7452c0bb9e792c3",
                 "shasum": ""
             },
             "require": {
@@ -1346,7 +1346,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-07-22T15:41:55+00:00"
+            "time": "2025-08-07T13:49:53+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -2150,65 +2150,6 @@
             "time": "2024-12-08T08:18:47+00:00"
         },
         {
-            "name": "maatwebsite/excel",
-            "version": "v1.1.5",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Maatwebsite/Laravel-Excel.git",
-                "reference": "0c67aba8387726458d42461eae91a3415593bbc4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Maatwebsite/Laravel-Excel/zipball/0c67aba8387726458d42461eae91a3415593bbc4",
-                "reference": "0c67aba8387726458d42461eae91a3415593bbc4",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.0",
-                "phpoffice/phpexcel": "~1.8.0"
-            },
-            "require-dev": {
-                "mockery/mockery": "~0.9",
-                "orchestra/testbench": "~2.2.0@dev",
-                "phpunit/phpunit": "~4.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "Maatwebsite\\Excel\\": "src/"
-                },
-                "classmap": [
-                    "src/Maatwebsite/Excel",
-                    "tests/TestCase.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "LGPL"
-            ],
-            "authors": [
-                {
-                    "name": "Maatwebsite.nl",
-                    "email": "patrick@maatwebsite.nl"
-                }
-            ],
-            "description": "An eloquent way of importing and exporting Excel and CSV in Laravel 4 with the power of PHPExcel",
-            "keywords": [
-                "PHPExcel",
-                "batch",
-                "csv",
-                "excel",
-                "export",
-                "import",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/Maatwebsite/Laravel-Excel/issues",
-                "source": "https://github.com/Maatwebsite/Laravel-Excel/tree/master"
-            },
-            "time": "2014-07-10T09:06:07+00:00"
-        },
-        {
             "name": "maennchen/zipstream-php",
             "version": "3.1.2",
             "source": {
@@ -2665,29 +2606,29 @@
         },
         {
             "name": "nette/utils",
-            "version": "v4.0.7",
+            "version": "v4.0.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nette/utils.git",
-                "reference": "e67c4061eb40b9c113b218214e42cb5a0dda28f2"
+                "reference": "c930ca4e3cf4f17dcfb03037703679d2396d2ede"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nette/utils/zipball/e67c4061eb40b9c113b218214e42cb5a0dda28f2",
-                "reference": "e67c4061eb40b9c113b218214e42cb5a0dda28f2",
+                "url": "https://api.github.com/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede",
+                "reference": "c930ca4e3cf4f17dcfb03037703679d2396d2ede",
                 "shasum": ""
             },
             "require": {
-                "php": "8.0 - 8.4"
+                "php": "8.0 - 8.5"
             },
             "conflict": {
                 "nette/finder": "<3",
                 "nette/schema": "<1.2.2"
             },
             "require-dev": {
-                "jetbrains/phpstorm-attributes": "dev-master",
+                "jetbrains/phpstorm-attributes": "^1.2",
                 "nette/tester": "^2.5",
-                "phpstan/phpstan": "^1.0",
+                "phpstan/phpstan-nette": "^2.0@stable",
                 "tracy/tracy": "^2.9"
             },
             "suggest": {
@@ -2705,6 +2646,9 @@
                 }
             },
             "autoload": {
+                "psr-4": {
+                    "Nette\\": "src"
+                },
                 "classmap": [
                     "src/"
                 ]
@@ -2745,9 +2689,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nette/utils/issues",
-                "source": "https://github.com/nette/utils/tree/v4.0.7"
+                "source": "https://github.com/nette/utils/tree/v4.0.8"
             },
-            "time": "2025-06-03T04:55:08+00:00"
+            "time": "2025-08-06T21:43:34+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -2893,68 +2837,6 @@
                 }
             ],
             "time": "2025-05-08T08:14:37+00:00"
-        },
-        {
-            "name": "phpoffice/phpexcel",
-            "version": "1.8.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/PHPOffice/PHPExcel.git",
-                "reference": "372c7cbb695a6f6f1e62649381aeaa37e7e70b32"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/PHPOffice/PHPExcel/zipball/372c7cbb695a6f6f1e62649381aeaa37e7e70b32",
-                "reference": "372c7cbb695a6f6f1e62649381aeaa37e7e70b32",
-                "shasum": ""
-            },
-            "require": {
-                "ext-xml": "*",
-                "ext-xmlwriter": "*",
-                "php": ">=5.2.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "PHPExcel": "Classes/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "LGPL"
-            ],
-            "authors": [
-                {
-                    "name": "Maarten Balliauw",
-                    "homepage": "http://blog.maartenballiauw.be"
-                },
-                {
-                    "name": "Mark Baker"
-                },
-                {
-                    "name": "Franck Lefevre",
-                    "homepage": "http://blog.rootslabs.net"
-                },
-                {
-                    "name": "Erik Tilt"
-                }
-            ],
-            "description": "PHPExcel - OpenXML - Read, Create and Write Spreadsheet documents in PHP - Spreadsheet engine",
-            "homepage": "http://phpexcel.codeplex.com",
-            "keywords": [
-                "OpenXML",
-                "excel",
-                "php",
-                "spreadsheet",
-                "xls",
-                "xlsx"
-            ],
-            "support": {
-                "issues": "https://github.com/PHPOffice/PHPExcel/issues",
-                "source": "https://github.com/PHPOffice/PHPExcel/tree/master"
-            },
-            "abandoned": "phpoffice/phpspreadsheet",
-            "time": "2015-05-01T07:00:55+00:00"
         },
         {
             "name": "phpoffice/phpspreadsheet",
@@ -3551,16 +3433,16 @@
         },
         {
             "name": "psy/psysh",
-            "version": "v0.12.9",
+            "version": "v0.12.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bobthecow/psysh.git",
-                "reference": "1b801844becfe648985372cb4b12ad6840245ace"
+                "reference": "6e80abe6f2257121f1eb9a4c55bf29d921025b22"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/1b801844becfe648985372cb4b12ad6840245ace",
-                "reference": "1b801844becfe648985372cb4b12ad6840245ace",
+                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/6e80abe6f2257121f1eb9a4c55bf29d921025b22",
+                "reference": "6e80abe6f2257121f1eb9a4c55bf29d921025b22",
                 "shasum": ""
             },
             "require": {
@@ -3610,12 +3492,11 @@
             "authors": [
                 {
                     "name": "Justin Hileman",
-                    "email": "justin@justinhileman.info",
-                    "homepage": "http://justinhileman.com"
+                    "email": "justin@justinhileman.info"
                 }
             ],
             "description": "An interactive shell for modern PHP.",
-            "homepage": "http://psysh.org",
+            "homepage": "https://psysh.org",
             "keywords": [
                 "REPL",
                 "console",
@@ -3624,9 +3505,9 @@
             ],
             "support": {
                 "issues": "https://github.com/bobthecow/psysh/issues",
-                "source": "https://github.com/bobthecow/psysh/tree/v0.12.9"
+                "source": "https://github.com/bobthecow/psysh/tree/v0.12.10"
             },
-            "time": "2025-06-23T02:35:06+00:00"
+            "time": "2025-08-04T12:39:37+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
