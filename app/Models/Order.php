@@ -13,7 +13,16 @@ class Order extends Model
 
     protected $table = 'orders';
 
-    protected $fillable = ['client_id', 'user_id', 'status', 'order'];
+    protected $fillable = [
+        'folio',
+        'order',
+        'client_number',
+        'vendor_number',
+        'total_amount',
+        'quantity',
+        'observations',
+        'status',
+    ];
 
     public function user()
     {
@@ -22,12 +31,12 @@ class Order extends Model
 
     public function client(): BelongsTo
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class, 'client_number', 'client_number');
     }
 
-    public function vendor(): BelongsTo
+    public function vendor()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'vendor_number', 'vendor_number');
     }
 
     public function products(): HasMany

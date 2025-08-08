@@ -16,4 +16,9 @@ class Location extends Model
         'latitud',
         'longitud',
     ];
+
+    public function clients()
+    {
+        return $this->hasMany(Client::class, 'location_id');
+    }
 }

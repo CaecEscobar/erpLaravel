@@ -15,7 +15,8 @@ use App\Http\Controllers\{
     OrderExportController,
     ReportImportController,
     ReportController,
-    ClientImportController
+    ClientImportController,
+    UserController
 };
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -23,9 +24,15 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 });
 
 // Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/users', [UserController::class, 'index']); // GET /api/users
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
     Route::apiResource('products', ProductController::class);
+    Route::get('/products/price-list/{id}', [ProductController::class, 'showByPriceList']);
     Route::apiResource('warehouses', WarehouseController::class);
     Route::apiResource('clients', ClientController::class);
+    Route::get('/clients/number/{client_number}', [ClientController::class, 'showByNumber']);
     Route::apiResource('locations', LocationController::class);
     Route::apiResource('user-profiles', UserProfileController::class)->only(['store', 'update']);
     Route::apiResource('roles', RoleController::class)->only(['index', 'store', 'destroy']);

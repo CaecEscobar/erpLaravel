@@ -12,6 +12,20 @@ class ProductController extends Controller
     public function index()
     {
         return Product::with('warehouses')->get();
+        
+    }
+
+    public function showByPriceList($priceListId)
+    {
+        $products = Product::with(['productDetails' => function ($query) use ($priceListId) {
+            $query->where('price_list_id', $priceListId);
+        }])
+        ->whereHas('productDetails', function ($query) use ($priceListId) {
+            $query->where('price_list_id', $priceListId);
+        })
+        ->get();
+
+        return response()->json($products);
     }
 
     public function store(Request $request)

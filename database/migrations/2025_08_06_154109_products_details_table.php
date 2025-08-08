@@ -12,9 +12,9 @@ return new class extends Migration {
             $table->text('description')->nullable();
             $table->string('unit_measure');
             $table->string('unit_multiplier');
-            $table->decimal('unit_price', 10, 2);
+            $table->decimal('unit_price', 15, 2);
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('price_list_id')->constrained()->onDelete('cascade');
+            $table->string('price_list_id');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

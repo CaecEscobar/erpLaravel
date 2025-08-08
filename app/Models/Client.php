@@ -28,4 +28,8 @@ class Client extends Model
         return $this->belongsTo(User::class, 'vendor_number', 'vendor_number');
     }
 
+    public function location()
+    {
+        return $this->belongsTo(Location::class, 'location_id');
+    }
 }

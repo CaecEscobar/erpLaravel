@@ -9,7 +9,31 @@ class ClientController extends Controller
 {
     public function index()
     {
-        return Client::with('location', 'user')->get();
+        return Client::with('location', 'vendor')->get();
+    }
+
+    public function show($id)
+    {
+        $client = Client::with(['location', 'vendor'])->find($id);
+
+        if (!$client) {
+            return response()->json(['message' => 'Cliente no encontrado.'], 404);
+        }
+
+        return response()->json($client);
+    }
+
+    public function showByNumber($client_number)
+    {
+        $client = Client::with(['vendor', 'location']) // incluye relaciones si quieres
+                    ->where('client_number', $client_number)
+                    ->first();
+
+        if (!$client) {
+            return response()->json(['message' => 'Cliente no encontrado'], 404);
+        }
+
+        return response()->json($client);
     }
 
     public function store(Request $request)

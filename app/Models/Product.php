@@ -17,4 +17,14 @@ class Product extends Model
     {
         return $this->hasMany(ProductDetail::class);
     }
+
+    public function productDetailsFiltered($priceListId)
+    {
+        return $this->hasMany(ProductDetail::class)->where('price_list_id', $priceListId);
+    }
+
+    public function productDetails()
+    {
+        return $this->hasMany(ProductDetail::class);
+    }
 }

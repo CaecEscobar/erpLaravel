@@ -11,7 +11,8 @@ class OrderExportController extends Controller
 {
     public function export($id)
     {
-        $order = Order::with(['client', 'user', 'products'])->findOrFail($id);
+        $order = Order::with(['client', 'vendor', 'products'])->findOrFail($id);
+        logger($order);
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
@@ -45,18 +46,29 @@ class OrderExportController extends Controller
 
         if (!empty($order->products)) {
             foreach ($order->products as $product) {
+                    $unitPrice = (float) str_replace(',', '', $product['unit_price']);
+                    $quantity = (float) $product['quantity'];
+                    $discount = (float) $product['discount'];
+                    $total = (float) $product['total'];
+
+                    $montoSinDescuento = $unitPrice * $quantity;
+                    $discountAmount = $montoSinDescuento * ($discount / 100);
+                    $subtotal = $montoSinDescuento - $discountAmount;
+                    $iva = $subtotal * 0.16;
+                    $totalCalculado = $subtotal + $iva;
+
                     $row = [
                         $order->id,
-                        $order->client->name ?? '',
+                        $order->client->client_number ?? '',
                         $order->created_at->format('Y-m-d'),
                         '',
                         '',
                         $order->observations ?? '',
-                        $order->user->vendor_number ?? '',
+                        $order->vendor->vendor_number ?? '',
                         $order->order ?? '',
                         '',
                         '',
-                        $product->monto ?? '',
+                        $montoSinDescuento ?? '',
                         $product->discount_amount ?? '',
                         '',
                         '',

@@ -13,7 +13,7 @@ class ProductImportController extends Controller
 {
     public function import(Request $request)
     {
-        set_time_limit(300);
+        set_time_limit(1000);
 
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls',
@@ -59,7 +59,8 @@ class ProductImportController extends Controller
                 $sku = $colA;
 
                 foreach ($listaColumnas as $col => $listaNombre) {
-                    $precio = $row[$col] ?? null;
+                    // $precio = $row[$col] ?? null;
+                    $precio = str_replace(',', '', $row[$col] ?? null);
                     if ($precio === null || $precio === '') {
                         continue;
                     }
@@ -73,13 +74,13 @@ class ProductImportController extends Controller
                         [
                             'sku' => $sku,
                             'product_id' => $currentProduct->id,
-                            'price_list_id' => $priceList->id,
+                            'price_list_id' => $priceList->name,
                         ],
                         [
                             'description' => $descripcion,
                             'unit_measure' => $unidad,
                             'unit_multiplier' => $multiplo,
-                            'unit_price' => floatval($precio),
+                            'unit_price' => (float) $precio,
                             'is_active' => true,
                         ]
                     );
