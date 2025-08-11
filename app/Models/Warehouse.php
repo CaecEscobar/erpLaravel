@@ -21,4 +21,9 @@ class Warehouse extends Model
                     ->withPivot('quantity')
                     ->withTimestamps();
     }
+
+    public function items()
+    {
+        return $this->hasMany(ProductWarehouse::class, 'warehouse_id')->orderBy('sku');
+    }
 }

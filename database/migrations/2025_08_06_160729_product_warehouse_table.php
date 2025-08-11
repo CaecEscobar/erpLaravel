@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('product_warehouse', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->string('sku');
             $table->foreignId('warehouse_id')->constrained()->onDelete('cascade');
             $table->decimal('quantity', 10, 2)->default(0);
             $table->boolean('is_active')->default(true);

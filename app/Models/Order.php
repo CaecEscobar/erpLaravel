@@ -17,6 +17,7 @@ class Order extends Model
         'folio',
         'order',
         'client_number',
+        'price_list',
         'vendor_number',
         'total_amount',
         'quantity',

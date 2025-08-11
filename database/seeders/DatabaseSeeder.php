@@ -20,12 +20,12 @@ class DatabaseSeeder extends Seeder
             UserAndProfileSeeder::class,
             PriceListSeeder::class,
             // ClientsSeeder::class,
-            WarehousesSeeder::class,
+            // WarehousesSeeder::class,
             // ProductsSeeder::class,
             // ProductsDetailsSeeder::class,
-            ProductWarehouseSeeder::class,
-            OrdersSeeder::class,
-            OrderProductsSeeder::class,
+            // ProductWarehouseSeeder::class,
+            // OrdersSeeder::class,
+            // OrderProductsSeeder::class,
         ]);
     }
 }

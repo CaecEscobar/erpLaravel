@@ -7,9 +7,22 @@ use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Client::with('location', 'vendor')->get();
+        $user = $request->user();
+        $query = Client::with(['location', 'vendor']);
+
+        if (! $this->isAdminLike($user)) {
+            $query->where('vendor_number', $user->vendor_number);
+        }
+
+        return $query->get();
+    }
+
+    private function isAdminLike($user): bool
+    {
+        $role = strtolower($user?->role?->name ?? '');
+        return in_array($role, ['admin', 'developer'], true);
     }
 
     public function show($id)

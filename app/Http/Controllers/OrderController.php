@@ -10,11 +10,22 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with(['client', 'vendor'])->get();
+        $user = $request->user();
+        $query = Order::with(['client', 'vendor']);
 
-        return response()->json($orders);
+        if (! $this->isAdminLike($user)) {
+            $query->where('vendor_number', $user->vendor_number);
+        }
+
+        return $query->get();
+    }
+
+    private function isAdminLike($user): bool
+    {
+        $role = strtolower($user?->role?->name ?? '');
+        return in_array($role, ['admin', 'developer'], true);
     }
 
     public function store(Request $request)
@@ -29,6 +40,7 @@ class OrderController extends Controller
         $order = Order::create([
             'folio' => $request->folio,
             'order' => $request->order,
+            'price_list' => $request->price_list,
             'client_number' => $request->client['client_number'],
             'vendor_number' => $request->client['vendor_number'],
             'total_amount' => $request->total_amount,
@@ -36,7 +48,7 @@ class OrderController extends Controller
             'observations' => $request->observations,
             'status' => $request->status,
         ]);
-
+        
         foreach ($request->products as $producto) {
             $unitPrice = (float) str_replace(',', '', $producto['unit_price']);
             $quantity = (float) $producto['unit_multiplier'];
@@ -110,6 +122,7 @@ class OrderController extends Controller
             'products' => $products,
             'observations' => $order->observations,
             'total_amount' => $order->total_amount,
+            'price_list' => $order->price_list
         ]);
     }
 
@@ -128,6 +141,7 @@ class OrderController extends Controller
             $order->update([
                 'folio' => $request->folio,
                 'order' => $request->order,
+                'price_list' => $request->price_list,
                 'client_number' => $request->client['client_number'],
                 'vendor_number' => $request->client['vendor_number'],
                 'total_amount' => $request->total_amount,

@@ -1,0 +1,21 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void {
+        Schema::table('orders', function (Blueprint $table) {
+            $table->string('price_list', 100)->nullable()->after('client_number');
+            $table->index('price_list');
+        });
+    }
+    public function down(): void {
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropIndex(['price_list']);
+            $table->dropColumn('price_list');
+        });
+    }
+};

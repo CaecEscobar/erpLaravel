@@ -16,21 +16,22 @@ use App\Http\Controllers\{
     ReportImportController,
     ReportController,
     ClientImportController,
-    UserController
+    UserController,
+    InventoryImportController,
 };
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user()->load('role');
 });
 
-// Route::middleware('auth:sanctum')->group(function () {
-
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [UserController::class, 'index']); // GET /api/users
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::apiResource('products', ProductController::class);
     Route::get('/products/price-list/{id}', [ProductController::class, 'showByPriceList']);
     Route::apiResource('warehouses', WarehouseController::class);
+    Route::get('/warehouses/{warehouse}/items', [WarehouseController::class, 'items']);
     Route::apiResource('clients', ClientController::class);
     Route::get('/clients/number/{client_number}', [ClientController::class, 'showByNumber']);
     Route::apiResource('locations', LocationController::class);
@@ -48,4 +49,5 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     Route::post('/import-reports', [ReportImportController::class, 'import']);
     Route::middleware('auth:sanctum')->get('/reports/dashboard', [ReportController::class, 'dashboard']);
     Route::post('/importar-clientes', [ClientImportController::class, 'import']);
-// });
+    Route::post('/inventario/import', [InventoryImportController::class, 'import']);
+});
