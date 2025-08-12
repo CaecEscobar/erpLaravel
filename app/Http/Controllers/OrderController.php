@@ -25,7 +25,7 @@ class OrderController extends Controller
     private function isAdminLike($user): bool
     {
         $role = strtolower($user?->role?->name ?? '');
-        return in_array($role, ['admin', 'developer'], true);
+        return in_array($role, ['admin', 'developer', 'gerente', 'facturacion'], true);
     }
 
     public function store(Request $request)

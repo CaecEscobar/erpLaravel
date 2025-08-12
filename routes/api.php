@@ -18,6 +18,11 @@ use App\Http\Controllers\{
     ClientImportController,
     UserController,
     InventoryImportController,
+    CompanyInfoController
+};
+
+use App\Http\Controllers\Pdf\{
+    OrderPdfController
 };
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -50,4 +55,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('auth:sanctum')->get('/reports/dashboard', [ReportController::class, 'dashboard']);
     Route::post('/importar-clientes', [ClientImportController::class, 'import']);
     Route::post('/inventario/import', [InventoryImportController::class, 'import']);
+
+    Route::get('/company-info', [CompanyInfoController::class, 'show']);
+    Route::put('/company-info/{companyInfo}', [CompanyInfoController::class, 'update']);
 });
+
+Route::get('/orders/{order}/pdf', [OrderPdfController::class, 'show'])->name('orders.pdf');
+Route::post('/orders/{order}/pdf/email/target', [OrderPdfController::class, 'emailToTarget'])
+    ->name('orders.pdf.email.target');

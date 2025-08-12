@@ -12,7 +12,7 @@ class Client extends Model
 
     protected $table = 'clients';
 
-    protected $fillable = ['name', 'client_number', 'vendor_number', 'location_id', 'max_discount', 'price_list_id'];
+    protected $fillable = ['name', 'client_number', 'vendor_number', 'location_id', 'max_discount', 'price_list_id', 'email'];
 
     protected $casts = [
         'price_list_id' => 'array',
