@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -29,6 +32,59 @@ class UserController extends Controller
             ->findOrFail($id);
 
         return response()->json($user);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name'             => 'required|string|max:255',
+            'email'            => 'required|string|email|max:255|unique:users',
+            'password'         => 'required|string|min:8',
+            'telefono_contacto'=> 'required|string|max:20',
+            'status'           => 'nullable|string',
+            'vendor_number'    => 'nullable|string|unique:users,vendor_number',
+            'name'        => 'nullable|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Crear usuario
+            $user = User::create([
+                'name'          => $validated['name'],
+                'email'         => $validated['email'],
+                'password'      => Hash::make($validated['password']),
+                'vendor_number' => $validated['vendor_number'] ?? null,
+                // Aquí podrías poner un role_id por defecto si aplica
+                'role_id'       => 3, // por ejemplo, rol vendedor
+            ]);
+
+            // Crear perfil relacionado
+            UserProfile::create([
+                'user_id'          => $user->id,
+                'nombre'           => $validated['name'] ?? $validated['name'],
+                'apellido_paterno' => '',
+                'apellido_materno' => '',
+                'telefono_contacto'=> $validated['telefono_contacto'],
+                'location_id'      => null, // si tienes la ubicación desde el front, la pones aquí
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario creado correctamente',
+                'data'    => $user->load('profile')
+            ], 201);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el usuario',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)

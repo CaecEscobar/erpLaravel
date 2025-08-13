@@ -24,7 +24,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Order::observe(OrderObserver::class);
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
-            return config('app.frontend_url')."/password-reset/$token?email={$notifiable->getEmailForPasswordReset()}";
+            $frontendUrl = config('app.frontend_url', env('APP_FRONTEND_URL'));
+            return "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($notifiable->getEmailForPasswordReset());
         });
     }
 }

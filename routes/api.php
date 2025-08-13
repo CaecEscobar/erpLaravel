@@ -25,13 +25,21 @@ use App\Http\Controllers\Pdf\{
     OrderPdfController
 };
 
+use App\Http\Controllers\Auth\PasswordResetController;
+
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user()->load('role');
+});
+
+Route::middleware('guest')->group(function () {
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
+    Route::post('/reset-password',  [PasswordResetController::class, 'resetPassword']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [UserController::class, 'index']); // GET /api/users
     Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::apiResource('products', ProductController::class);
     Route::get('/products/price-list/{id}', [ProductController::class, 'showByPriceList']);
