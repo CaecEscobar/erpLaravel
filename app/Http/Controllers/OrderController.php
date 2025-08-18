@@ -19,7 +19,7 @@ class OrderController extends Controller
             $query->where('vendor_number', $user->vendor_number);
         }
 
-        return $query->get();
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     private function isAdminLike($user): bool
@@ -30,62 +30,67 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-    DB::beginTransaction();
+        DB::beginTransaction();
+        try {
+            // Suma de cantidades
+            $totalQuantity = collect($request->products)->sum(function ($producto) {
+                return (float) ($producto['quantity'] ?? 0);
+            });
 
-    try {
-        $totalQuantity = collect($request->products)->sum(function ($producto) {
-            return (float) $producto['unit_multiplier'];
-        });
+            // Calcular total_amount en el backend (más seguro)
+            $orderTotal = 0.0;
 
-        $order = Order::create([
-            'folio' => $request->folio,
-            'order' => $request->order,
-            'price_list' => $request->price_list,
-            'client_number' => $request->client['client_number'],
-            'vendor_number' => $request->client['vendor_number'],
-            'total_amount' => $request->total_amount,
-            'quantity' => $totalQuantity,
-            'observations' => $request->observations,
-            'status' => $request->status,
-        ]);
-        
-        foreach ($request->products as $producto) {
-            $unitPrice = (float) str_replace(',', '', $producto['unit_price']);
-            $quantity = (float) $producto['unit_multiplier'];
-            $discount = (float) $producto['discount'];
-            $total = (float) $producto['total'];
-
-            $montoSinDescuento = $unitPrice * $quantity;
-            $discountAmount = $montoSinDescuento * ($discount / 100);
-            $subtotal = $montoSinDescuento - $discountAmount;
-            $iva = $subtotal * 0.16;
-            $totalCalculado = $subtotal + $iva;
-
-            OrderProduct::create([
-                'order_id' => $order->id,
-                'product_id' => $producto['product_id'],
-                'quantity' => $quantity,
-                'unit_price' => $unitPrice,
-                'discount' => $discount,
-                'discount_amount' => $discountAmount,
-                'subtotal' => $subtotal,
-                'iva' => $iva,
-                'total' => $totalCalculado,
-                'is_active' => true,
+            $order = Order::create([
+                'folio'         => $request->folio,
+                'order'         => $request->order,
+                'price_list'    => $request->price_list,
+                'client_number' => $request->client['client_number'],
+                'vendor_number' => $request->client['vendor_number'],
+                'total_amount'  => 0, // lo fijamos abajo con el real
+                'quantity'      => $totalQuantity,
+                'observations'  => $request->observations,
+                'status'        => $request->status,
             ]);
-        }
 
-        DB::commit();
+            foreach ($request->products as $producto) {
+                $unitPrice = (float) str_replace(',', '', $producto['unit_price']);
+                $quantity  = (float) ($producto['quantity'] ?? 0);   // 👈 ahora quantity
+                $discount  = (float) ($producto['discount'] ?? 0);   // %
+                // $total del request no se usa; lo calculamos nosotros
 
-        return response()->json([
-            'message' => 'Orden creada correctamente.',
-            'order_id' => $order->id
-        ]);
+                $montoSinDescuento = $unitPrice * $quantity;
+                $discountAmount    = $montoSinDescuento * ($discount / 100);
+                $subtotal          = $montoSinDescuento - $discountAmount;
+                $iva               = $subtotal * 0.16;
+                $totalCalculado    = $subtotal + $iva;
+
+                OrderProduct::create([
+                    'order_id'        => $order->id,
+                    'product_id'      => $producto['product_id'],
+                    'quantity'        => $quantity,
+                    'unit_price'      => $unitPrice,
+                    'discount'        => $discount,
+                    'discount_amount' => round($discountAmount, 2),
+                    'subtotal'        => round($subtotal, 2),
+                    'iva'             => round($iva, 2),
+                    'total'           => round($totalCalculado, 2),
+                    'is_active'       => true,
+                ]);
+
+                $orderTotal += $totalCalculado;
+            }
+
+            $order->update(['total_amount' => round($orderTotal, 2)]);
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Orden creada correctamente.',
+                'order'   => $order
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
-                'error' => 'Error al guardar la orden',
+                'error'   => 'Error al guardar la orden',
                 'message' => $e->getMessage(),
             ], 500);
         }
@@ -93,7 +98,6 @@ class OrderController extends Controller
 
     public function show($id)
     {
-        logger($id);
         $order = Order::with([
             'client.vendor',
             'client.location',
@@ -101,30 +105,44 @@ class OrderController extends Controller
         ])->findOrFail($id);
 
         $products = $order->products->map(function ($op) {
+            $detail = optional($op->product->productDetails->first());
+
             return [
-                'product_id' => $op->product_id,
-                'name' => $op->product->name ?? null,
-                'unit_multiplier' => $op->quantity,
-                'unit_measure' => $op->product->unit_measure ?? null,
-                'discount' => $op->discount,
-                'max_discount' => $op->product->max_discount ?? 5,
-                'unit_price' => $op->unit_price,
-                'total' => $op->total,
+                'product_id'     => $op->product_id,
+                'name'           => $op->product->name ?? null,
+
+                // Datos del detail (si existe)
+                'sku'            => $detail?->sku,
+                'description'    => $detail?->description,
+                'unit_measure'   => $detail?->unit_measure,
+
+                // Regla nueva: 1:1 (sin multiplier)
+                'unit_price'     => (float) $op->unit_price,
+                'quantity'       => (float) $op->quantity,       // 👈 clave que espera tu UI
+                'discount_pct'   => (float) $op->discount,       // 👈 tu UI usa discount_pct
+                'max_discount'   => (int)   ($op->product->max_discount ?? 5),
+                'tax_rate'       => 0.16,
+
+                // (Compatibilidad opcional: por si algo del front todavía lee estas)
+                'discount'       => (float) $op->discount,       // alias
+                'unit_multiplier'=> (float) $op->quantity,       // alias (ya no se usa en cálculos)
+                // 'total'        => (float) $op->total,          // si lo quieres seguir mostrando, pero la UI recalcula
             ];
-        });
+        })->values();
 
         return response()->json([
-            'id' => $order->id,
-            'folio' => $order->folio,
-            'order' => $order->order,
-            'status' => $order->status,
-            'client' => $order->client,
-            'products' => $products,
+            'id'           => $order->id,
+            'folio'        => $order->folio,
+            'order'        => $order->order,
+            'status'       => $order->status,
+            'client'       => $order->client,
+            'products'     => $products,
             'observations' => $order->observations,
-            'total_amount' => $order->total_amount,
-            'price_list' => $order->price_list
+            'total_amount' => (float) $order->total_amount,
+            'price_list'   => $order->price_list,
         ]);
     }
+
 
     public function update(Request $request, $id)
     {
@@ -133,66 +151,95 @@ class OrderController extends Controller
         try {
             $order = Order::findOrFail($id);
 
-            // 1. Actualizar la orden
-            $totalQuantity = collect($request->products)->sum(function ($prod) {
-                return (float) $prod['unit_multiplier'];
+            $products = $request->input('products', []);
+
+            // 1) Totales de la orden
+            $totalQuantity = collect($products)->sum(function ($p) {
+                return (float) ($p['quantity'] ?? 0);
             });
 
+            $folio = $order->folio;
+            if ($request->input('status') === 'procesado' && $folio === 'PT-00-0000') {
+                $folio = $this->generateFolio();
+            }
+
+            $orderTotal = 0.0;
+
+            // 2) Actualizar cabecera (total_amount se fija al final)
             $order->update([
-                'folio' => $request->folio,
-                'order' => $request->order,
-                'price_list' => $request->price_list,
-                'client_number' => $request->client['client_number'],
-                'vendor_number' => $request->client['vendor_number'],
-                'total_amount' => $request->total_amount,
-                'quantity' => $totalQuantity,
-                'observations' => $request->observations,
-                'status' => $request->status,
+                'folio'         => $folio,
+                'order'         => $request->input('order'),
+                'price_list'    => $request->input('price_list'),
+                'client_number' => data_get($request, 'client.client_number'),
+                'vendor_number' => data_get($request, 'client.vendor_number'),
+                'total_amount'  => 0, // se recalcula abajo
+                'quantity'      => $totalQuantity,
+                'observations'  => $request->input('observations'),
+                'status'        => $request->input('status'),
             ]);
 
-            // 2. Eliminar los productos anteriores
+            // 3) Limpiar productos previos
             $order->products()->delete();
 
-            // 3. Agregar los nuevos productos
-            foreach ($request->products as $producto) {
-                $unitPrice = (float) str_replace(',', '', $producto['unit_price']);
-                $quantity = (float) $producto['unit_multiplier'];
-                $discount = (float) $producto['discount'];
-                $total = (float) $producto['total'];
+            // 4) Re-crear productos recalculando importes
+            foreach ($products as $p) {
+                $unitPrice = (float) str_replace(',', '', $p['unit_price'] ?? 0);
+                $quantity  = (float) ($p['quantity'] ?? 0);     // 👈 ahora quantity
+                $discount  = (float) ($p['discount'] ?? 0);     // % (no monto)
 
-                $montoSinDescuento = $unitPrice * $quantity;
-                $discountAmount = $montoSinDescuento * ($discount / 100);
-                $subtotal = $montoSinDescuento - $discountAmount;
-                $iva = $subtotal * 0.16;
-                $totalCalculado = $subtotal + $iva;
+                $montoSinDescuento = $unitPrice * $quantity;                 // base
+                $discountAmount    = $montoSinDescuento * ($discount / 100); // monto desc
+                $subtotal          = $montoSinDescuento - $discountAmount;   // antes IVA
+                $iva               = $subtotal * 0.16;
+                $totalCalculado    = $subtotal + $iva;
 
                 OrderProduct::create([
-                    'order_id' => $order->id,
-                    'product_id' => $producto['product_id'],
-                    'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
-                    'discount' => $discount,
-                    'discount_amount' => $discountAmount,
-                    'subtotal' => $subtotal,
-                    'iva' => $iva,
-                    'total' => $totalCalculado,
-                    'is_active' => true,
+                    'order_id'        => $order->id,
+                    'product_id'      => $p['product_id'],
+                    'quantity'        => $quantity,
+                    'unit_price'      => $unitPrice,
+                    'discount'        => $discount,
+                    'discount_amount' => round($discountAmount, 2),
+                    'subtotal'        => round($subtotal, 2),
+                    'iva'             => round($iva, 2),
+                    'total'           => round($totalCalculado, 2),
+                    'is_active'       => true,
                 ]);
+
+                $orderTotal += $totalCalculado;
             }
+
+            // 5) Actualizar total real de la orden
+            $order->update([
+                'total_amount' => round($orderTotal, 2),
+            ]);
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Orden actualizada correctamente.',
-                'order_id' => $order->id
+                'message'  => 'Orden actualizada correctamente.',
+                'order' => $order,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
-                'error' => 'Error al actualizar la orden',
-                'message' => $e->getMessage()
+                'error'   => 'Error al actualizar la orden',
+                'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function generateFolio(): string
+    {
+        do {
+            $folio = 'P-' .
+                sprintf('%02d', random_int(0, 99)) .
+                '-' .
+                sprintf('%04d', random_int(0, 9999));
+        } while (Order::where('folio', $folio)->exists());
+
+        return $folio;
     }
 
     public function destroy($id)

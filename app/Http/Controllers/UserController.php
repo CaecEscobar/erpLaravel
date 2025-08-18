@@ -7,31 +7,45 @@ use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
     // Si quieres todo sin paginar:
-    public function index()
+    public function index(Request $request)
     {
-        // Selecciona solo campos necesarios
-        $users = User::select('id','name','email','vendor_number')->where('id', '!=', 9999)->get();
-        return response()->json($users);
-    }
+        $validated = $request->validate([
+            'role_id' => 'nullable|integer|in:2,3,4,5,6',
+        ]);
 
-    // (opcional) Con paginación:
-    // public function index(Request $request) {
-    //   $perPage = (int)($request->query('per_page', 15));
-    //   return User::select('id','name','email','vendor_number','created_at')->paginate($perPage);
-    // }
+        $query = User::with(['profile:id,user_id,telefono_contacto','role:id,name']) // ← carga el perfil
+            ->select('id','name','email','vendor_number','created_at','status','role_id')
+            ->where('id', '!=', 9999);
+
+        if (isset($validated['role_id'])) {
+            $query->where('role_id', $validated['role_id']); // ej. 3 = Vendedor
+        }
+
+        return response()->json($query->get());
+    }
 
     public function show($id)
     {
-        // Buscar usuario excepto el 9999
-        $user = User::select('id','name','email','vendor_number','created_at')
-            ->where('id', '!=', 9999)
+        $user = User::with(['profile:id,user_id,telefono_contacto']) 
+            ->select('id','name','email','vendor_number','created_at','status','role_id')
             ->findOrFail($id);
 
-        return response()->json($user);
+        return response()->json([
+            'id'                => $user->id,
+            'name'              => $user->name,
+            'email'             => $user->email,
+            'vendor_number'     => $user->vendor_number,
+            'role_id'           => $user->role_id,
+            'role_name'         => $user->role->name,
+            'status'            => $user->status,
+            'created_at'        => $user->created_at,
+            'telefono_contacto' => $user->profile->telefono_contacto ?? null,
+        ]);
     }
 
     public function store(Request $request)
@@ -42,31 +56,28 @@ class UserController extends Controller
             'password'         => 'required|string|min:8',
             'telefono_contacto'=> 'required|string|max:20',
             'status'           => 'nullable|string',
+            'role_id'          => 'required|integer',
             'vendor_number'    => 'nullable|string|unique:users,vendor_number',
-            'name'        => 'nullable|string|max:255',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Crear usuario
             $user = User::create([
                 'name'          => $validated['name'],
                 'email'         => $validated['email'],
                 'password'      => Hash::make($validated['password']),
                 'vendor_number' => $validated['vendor_number'] ?? null,
-                // Aquí podrías poner un role_id por defecto si aplica
-                'role_id'       => 3, // por ejemplo, rol vendedor
+                'role_id'       => $validated['role_id'],
+                'status'        => $request->input('status'),
             ]);
 
-            // Crear perfil relacionado
-            UserProfile::create([
-                'user_id'          => $user->id,
-                'nombre'           => $validated['name'] ?? $validated['name'],
-                'apellido_paterno' => '',
-                'apellido_materno' => '',
-                'telefono_contacto'=> $validated['telefono_contacto'],
-                'location_id'      => null, // si tienes la ubicación desde el front, la pones aquí
+            $user->profile()->create([
+                'nombre'            => $validated['name'],
+                'apellido_paterno'  => '',
+                'apellido_materno'  => '',
+                'telefono_contacto' => $validated['telefono_contacto'],
+                'location_id'       => null,
             ]);
 
             DB::commit();
@@ -74,7 +85,7 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Usuario creado correctamente',
-                'data'    => $user->load('profile')
+                'data'    => $user->load('profile'),
             ], 201);
 
         } catch (\Throwable $e) {
@@ -89,34 +100,61 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        // Evitar modificar el usuario con ID 9999
-        if ($id == 9999) {
-            return response()->json(['message' => 'No se puede modificar este usuario'], 403);
-        }
+        $user = User::with('profile')->findOrFail($id);
 
-        $user = User::findOrFail($id);
+        $incomingRoleId = $request->input('role_id', $user->role_id);
 
-        // Validar datos recibidos
         $validated = $request->validate([
-            'name'          => 'sometimes|string|max:255',
-            'email'         => 'sometimes|email|unique:users,email,' . $id,
-            'vendor_number' => 'sometimes|numeric',
-            'password'      => 'nullable|string|min:6'
+            'name'              => 'sometimes|required|string|max:255',
+            'email'             => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($id)],
+            'password'          => 'sometimes|nullable|string|min:8',
+            'telefono_contacto' => 'sometimes|required|string|max:20',
+            'status'            => ['sometimes','string', Rule::in(['activo','inactivo'])],
+            'role_id'           => 'sometimes|integer',
+            'vendor_number'     => [
+                'sometimes','nullable','integer',
+                Rule::unique('users','vendor_number')->ignore($id),
+                Rule::requiredIf((int)$incomingRoleId === 3), // requerido si rol=3 (Vendedor)
+            ],
         ]);
 
-        // Si viene contraseña, encriptarla
-        if (!empty($validated['password'])) {
-            $validated['password'] = bcrypt($validated['password']);
-        } else {
-            unset($validated['password']);
+        DB::beginTransaction();
+        try {
+            if (array_key_exists('password', $validated)) {
+                if ($validated['password']) {
+                    $validated['password'] = Hash::make($validated['password']);
+                } else {
+                    unset($validated['password']);
+                }
+            }
+
+            $user->fill(collect($validated)->except(['telefono_contacto'])->toArray());
+            $user->save();
+
+            if ($request->has('telefono_contacto')) {
+                $user->profile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'telefono_contacto' => $validated['telefono_contacto'],
+                        'nombre'            => $validated['name'] ?? ($user->profile->nombre ?? $user->name),
+                    ]
+                );
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario actualizado correctamente',
+                'data'    => $user->load('profile'),
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el usuario',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        // Actualizar usuario
-        $user->update($validated);
-
-        return response()->json([
-            'message' => 'Usuario actualizado correctamente',
-            'user' => $user
-        ]);
     }
 }

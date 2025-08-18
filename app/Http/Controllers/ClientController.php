@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class ClientController extends Controller
 {
@@ -55,37 +56,31 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'name'          => ['required','string','max:255'],
-            'client_number' => ['required','string','max:50'], // sin unique
-            'vendor_number' => ['nullable','string','max:50'],
+            'client_number' => ['required','integer'], // sin unique
+            'vendor_number' => ['nullable','integer'],
             'email'         => ['nullable','email','max:255'],
             'max_discount'  => ['nullable','numeric','min:0','max:100'],
 
-            // Location anidada
             'location'                  => ['required','array'],
             'location.calle'            => ['required','string','max:255'],
-            'location.numero'           => ['required','string','max:50'],
+            'location.numero'           => ['required','integer'],
             'location.colonia'          => ['required','string','max:255'],
             'location.municipio'        => ['required','string','max:255'],
             'location.estado'           => ['required','string','max:255'],
-            'location.codigo_postal'    => ['required','string','max:20'],
+            'location.codigo_postal'    => ['required','integer'],
             'location.latitud'          => ['nullable','numeric','between:-90,90'],
             'location.longitud'         => ['nullable','numeric','between:-180,180'],
 
-            // price_list_id como texto: "4" o "4, 1 Gob, 5"
             'price_list_id'   => ['nullable','string','max:1000'],
         ]);
 
-        // 1) Normalizar y buscar/crear la Location
         $locInput = $validated['location'];
-        // Limpia espacios
         $locInput = array_map(fn($v) => is_string($v) ? trim($v) : $v, $locInput);
 
-        // Clave de búsqueda (sin lat/long)
         $where = Arr::only($locInput, [
             'calle','numero','colonia','municipio','estado','codigo_postal'
         ]);
 
-        // Valores extra si se crea
         $values = [
             'latitud'  => $locInput['latitud']  ?? null,
             'longitud' => $locInput['longitud'] ?? null,
@@ -93,7 +88,6 @@ class ClientController extends Controller
 
         $location = Location::firstOrCreate($where, $values);
 
-        // (opcional) si quieres actualizar lat/long cuando estaban nulos:
         if (($location->latitud === null && !empty($locInput['latitud'])) ||
             ($location->longitud === null && !empty($locInput['longitud']))) {
             $location->latitud  = $locInput['latitud']  ?? $location->latitud;
@@ -101,7 +95,6 @@ class ClientController extends Controller
             $location->save();
         }
 
-        // 2) price_list_id: "4, 1 Gob, 5" -> ["4","1 Gob","5"]
         $raw = (string)($validated['price_list_id'] ?? '');
         $parts = array_values(array_filter(
             array_map(fn($s)=>trim($s), explode(',', $raw)),
@@ -109,7 +102,6 @@ class ClientController extends Controller
         ));
         $priceListJson = json_encode($parts, JSON_UNESCAPED_UNICODE);
 
-        // 3) Crear cliente
         $client = Client::create([
             'name'          => $validated['name'],
             'client_number' => $validated['client_number'],
@@ -126,8 +118,66 @@ class ClientController extends Controller
     public function update(Request $request, $id)
     {
         $client = Client::findOrFail($id);
-        $client->update($request->only(['name', 'location_id', 'user_id', 'max_discount', 'price_list_id']));
-        return response()->json($client);
+
+        $validated = $request->validate([
+            'name'          => ['required','string','max:255'],
+            'client_number' => ['required','integer'],
+            'vendor_number' => ['nullable','integer'],
+            'email'         => ['nullable','email','max:255'],
+            'max_discount'  => ['nullable','numeric','min:0','max:100'],
+
+            'location'               => ['required','array'],
+            'location.calle'         => ['required','string','max:255'],
+            'location.numero'        => ['required','integer'],
+            'location.colonia'       => ['required','string','max:255'],
+            'location.municipio'     => ['required','string','max:255'],
+            'location.estado'        => ['required','string','max:255'],
+            'location.codigo_postal' => ['required','string'],
+            'location.latitud'       => ['nullable','numeric','between:-90,90'],
+            'location.longitud'      => ['nullable','numeric','between:-180,180'],
+
+            'price_list_id' => ['nullable','string','max:1000'],
+        ]);
+
+        return DB::transaction(function () use ($validated, $client) {
+            $locInput = array_map(fn($v) => is_string($v) ? trim($v) : $v, $validated['location']);
+            $where = Arr::only($locInput, ['calle','numero','colonia','municipio','estado','codigo_postal']);
+            $values = [
+                'latitud'  => $locInput['latitud']  ?? null,
+                'longitud' => $locInput['longitud'] ?? null,
+            ];
+
+            $location = Location::firstOrCreate($where, $values);
+
+            if (($location->latitud === null && !empty($locInput['latitud'])) ||
+                ($location->longitud === null && !empty($locInput['longitud']))) {
+                $location->latitud  = $locInput['latitud']  ?? $location->latitud;
+                $location->longitud = $locInput['longitud'] ?? $location->longitud;
+                $location->save();
+            }
+
+            $raw = (string)($validated['price_list_id'] ?? '');
+            $parts = array_values(array_filter(
+                array_map(fn($s) => trim($s), explode(',', $raw)),
+                fn($s) => $s !== ''
+            ));
+            $priceListJson = json_encode($parts, JSON_UNESCAPED_UNICODE);
+
+            $client->update([
+                'name'          => $validated['name'],
+                'client_number' => $validated['client_number'],
+                'vendor_number' => $validated['vendor_number'] ?? null,
+                'email'         => $validated['email'] ?? null,
+                'max_discount'  => $validated['max_discount'] ?? null,
+                'location_id'   => $location->id,
+                'price_list_id' => $priceListJson,
+            ]);
+
+            return response()->json([
+                'ok'   => true,
+                'data' => $client->load('location'),
+            ]);
+        });
     }
 
     public function destroy($id)
