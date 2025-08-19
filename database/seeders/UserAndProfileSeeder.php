@@ -12,13 +12,13 @@ class UserAndProfileSeeder extends Seeder
     {
         $password = Hash::make('1234qwer');
 
-        DB::table('users')->insert([
-            'id' => 9999,
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => $password,
-            'role_id' => '1',
-        ]);
+        // DB::table('users')->insert([
+        //     'id' => 2,
+        //     'name' => 'Test User',
+        //     'email' => 'test@example.com',
+        //     'password' => $password,
+        //     'role_id' => '1',
+        // ]);
 
         DB::table('users')->insert([
             ['id' => 1, 'name' => 'Rodolfo Lopez Morales', 'email' => 'rodolfo1@mail.com', 'email_verified_at' => '2025-08-06 16:28:48', 'password' => $password, 'role_id' => '3' , 'vendor_number' => '1', 'remember_token' => null, 'created_at' => '2025-08-06 16:28:48', 'updated_at' => '2025-08-06 16:28:48'],
