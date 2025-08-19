@@ -9,9 +9,7 @@ class UserProfile extends Model
 {
     protected $fillable = [
         'user_id',
-        'nombre',
-        'apellido_paterno',
-        'apellido_materno',
+        'name',
         'telefono_contacto',
         'location_id',
     ];

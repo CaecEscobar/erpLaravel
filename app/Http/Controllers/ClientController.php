@@ -59,6 +59,7 @@ class ClientController extends Controller
             'client_number' => ['required','integer'], // sin unique
             'vendor_number' => ['nullable','integer'],
             'email'         => ['nullable','email','max:255'],
+            'telefono_contacto' => 'sometimes|required|string|max:20',
             'max_discount'  => ['nullable','numeric','min:0','max:100'],
 
             'location'                  => ['required','array'],
@@ -67,7 +68,7 @@ class ClientController extends Controller
             'location.colonia'          => ['required','string','max:255'],
             'location.municipio'        => ['required','string','max:255'],
             'location.estado'           => ['required','string','max:255'],
-            'location.codigo_postal'    => ['required','integer'],
+            'location.codigo_postal'    => ['required','string'],
             'location.latitud'          => ['nullable','numeric','between:-90,90'],
             'location.longitud'         => ['nullable','numeric','between:-180,180'],
 
@@ -103,13 +104,14 @@ class ClientController extends Controller
         $priceListJson = json_encode($parts, JSON_UNESCAPED_UNICODE);
 
         $client = Client::create([
-            'name'          => $validated['name'],
-            'client_number' => $validated['client_number'],
-            'vendor_number' => $validated['vendor_number'] ?? null,
-            'location_id'   => $location->id,
-            'max_discount'  => $validated['max_discount'] ?? null,
-            'email'         => $validated['email'] ?? null,
-            'price_list_id' => $priceListJson,
+            'name'              => $validated['name'],
+            'telefono_contacto' => $validated['telefono_contacto'],
+            'client_number'     => $validated['client_number'],
+            'vendor_number'     => $validated['vendor_number'] ?? null,
+            'location_id'       => $location->id,
+            'max_discount'      => $validated['max_discount'] ?? null,
+            'email'             => $validated['email'] ?? null,
+            'price_list_id'     => $priceListJson,
         ]);
 
         return response()->json(['ok' => true, 'data' => $client->load('location')], 201);
@@ -124,6 +126,7 @@ class ClientController extends Controller
             'client_number' => ['required','integer'],
             'vendor_number' => ['nullable','integer'],
             'email'         => ['nullable','email','max:255'],
+            'telefono_contacto' => 'sometimes|required|string|max:20',
             'max_discount'  => ['nullable','numeric','min:0','max:100'],
 
             'location'               => ['required','array'],
@@ -165,6 +168,7 @@ class ClientController extends Controller
 
             $client->update([
                 'name'          => $validated['name'],
+                'telefono_contacto' => $validated['telefono_contacto'],
                 'client_number' => $validated['client_number'],
                 'vendor_number' => $validated['vendor_number'] ?? null,
                 'email'         => $validated['email'] ?? null,

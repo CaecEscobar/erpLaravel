@@ -74,8 +74,8 @@ class OrderPdfMapper
         $company = CompanyInfo::current();
 
         return [
-            'folio'          => $order->order ?: ('Q-'.str_pad($order->id, 4, '0', STR_PAD_LEFT)),
-            'type'           => 'ORDEN', // tu status dice "procesado"; cámbialo si quieres otra etiqueta
+            'folio'          => $order->folio ?: ('Q-'.str_pad($order->id, 4, '0', STR_PAD_LEFT)),
+            'type'           => 'FOLIO', // tu status dice "procesado"; cámbialo si quieres otra etiqueta
             'anhio'          => (string) now()->year,
             'nombreProyecto' => '',
             'FechaSolicitud' => optional($order->created_at)->format('Y-m-d'),

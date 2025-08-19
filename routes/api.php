@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::post('users/import-vendedores', [UserController::class, 'importVendedores']);
     Route::apiResource('products', ProductController::class);
     Route::get('/products/price-list/{id}', [ProductController::class, 'showByPriceList']);
     Route::apiResource('warehouses', WarehouseController::class);
@@ -59,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/importar-productos', [ProductImportController::class, 'import']);
     Route::get('/export-order/{id}', [OrderExportController::class, 'export']);
+    Route::get('/export-order', [OrderExportController::class, 'exportAll']);
     Route::post('/import-reports', [ReportImportController::class, 'import']);
     Route::middleware('auth:sanctum')->get('/reports/dashboard', [ReportController::class, 'dashboard']);
     Route::post('/importar-clientes', [ClientImportController::class, 'import']);

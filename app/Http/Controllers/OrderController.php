@@ -144,7 +144,7 @@ class OrderController extends Controller
     }
 
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, $foliado = null)
     {
         DB::beginTransaction();
 
@@ -153,43 +153,41 @@ class OrderController extends Controller
 
             $products = $request->input('products', []);
 
-            // 1) Totales de la orden
             $totalQuantity = collect($products)->sum(function ($p) {
                 return (float) ($p['quantity'] ?? 0);
             });
 
+            $shouldFoliar = $request->boolean('foliado');
+
             $folio = $order->folio;
-            if ($request->input('status') === 'procesado' && $folio === 'PT-00-0000') {
-                $folio = $this->generateFolio();
+            if ($shouldFoliar && $folio === 'PT-00-0000') {
+                $folio = $this->generateFolioFromId($order->id);
             }
 
             $orderTotal = 0.0;
 
-            // 2) Actualizar cabecera (total_amount se fija al final)
             $order->update([
                 'folio'         => $folio,
                 'order'         => $request->input('order'),
                 'price_list'    => $request->input('price_list'),
                 'client_number' => data_get($request, 'client.client_number'),
                 'vendor_number' => data_get($request, 'client.vendor_number'),
-                'total_amount'  => 0, // se recalcula abajo
+                'total_amount'  => 0,
                 'quantity'      => $totalQuantity,
                 'observations'  => $request->input('observations'),
                 'status'        => $request->input('status'),
             ]);
 
-            // 3) Limpiar productos previos
             $order->products()->delete();
 
-            // 4) Re-crear productos recalculando importes
             foreach ($products as $p) {
                 $unitPrice = (float) str_replace(',', '', $p['unit_price'] ?? 0);
-                $quantity  = (float) ($p['quantity'] ?? 0);     // 👈 ahora quantity
-                $discount  = (float) ($p['discount'] ?? 0);     // % (no monto)
+                $quantity  = (float) ($p['quantity'] ?? 0);  
+                $discount  = (float) ($p['discount'] ?? 0);    
 
-                $montoSinDescuento = $unitPrice * $quantity;                 // base
-                $discountAmount    = $montoSinDescuento * ($discount / 100); // monto desc
-                $subtotal          = $montoSinDescuento - $discountAmount;   // antes IVA
+                $montoSinDescuento = $unitPrice * $quantity;              
+                $discountAmount    = $montoSinDescuento * ($discount / 100); 
+                $subtotal          = $montoSinDescuento - $discountAmount; 
                 $iva               = $subtotal * 0.16;
                 $totalCalculado    = $subtotal + $iva;
 
@@ -209,7 +207,6 @@ class OrderController extends Controller
                 $orderTotal += $totalCalculado;
             }
 
-            // 5) Actualizar total real de la orden
             $order->update([
                 'total_amount' => round($orderTotal, 2),
             ]);
@@ -230,16 +227,13 @@ class OrderController extends Controller
         }
     }
 
-    private function generateFolio(): string
+    private function generateFolioFromId(int $id): string
     {
-        do {
-            $folio = 'P-' .
-                sprintf('%02d', random_int(0, 99)) .
-                '-' .
-                sprintf('%04d', random_int(0, 9999));
-        } while (Order::where('folio', $folio)->exists());
+        $formatted = str_pad((string)$id, 6, '0', STR_PAD_LEFT);
+        $parte1 = substr($formatted, 0, 2);
+        $parte2 = substr($formatted, 2);
 
-        return $folio;
+        return "P-{$parte1}-{$parte2}";
     }
 
     public function destroy($id)
